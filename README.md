@@ -359,8 +359,8 @@ DeepSeek-Coder-V2-Instruct is specifically designed to excel as an AI coding age
 
 #### Superior Performance in Agent Tasks
 As shown in our evaluation results:
-- **SWE-bench**: 12.7% success rate on real-world bug fixing tasks (best among open-source models)
-- **Aider**: 73.7% performance on code editing benchmarks (outperforming GPT-4-Turbo)
+- **SWE-bench**: 12.7% success rate on real-world bug fixing tasks
+- **Aider**: 73.7% performance on code editing benchmarks
 - **Context Window**: 128K tokens enable working with large codebases
 - **Multi-language Support**: 338 programming languages for diverse development needs
 
@@ -388,7 +388,7 @@ client = openai.Client(
 
 # Use like any OpenAI model
 response = client.chat.completions.create(
-    model="deepseek-coder",
+    model="deepseek-coder",  # Use the appropriate model name from DeepSeek's API
     messages=[
         {"role": "system", "content": "You are an expert coding assistant."},
         {"role": "user", "content": "Write a Python function to implement binary search."}
@@ -457,15 +457,16 @@ Combine DeepSeek-Coder-V2 with knowledge bases for enhanced agent capabilities:
 
 ```python
 # Example: Integrating with a vector database
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
-from langchain.llms import OpenAI
+# Note: Adjust imports based on your LangChain version
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAI
 
-# Setup DeepSeek as LLM backend
+# Setup DeepSeek as LLM backend (adjust model name as needed)
 llm = OpenAI(
     api_key="your-deepseek-api-key",
     base_url="https://api.deepseek.com",
-    model="deepseek-coder"
+    model_name="deepseek-coder"  # Check DeepSeek's documentation for exact model names
 )
 
 # Load your codebase into vector store
