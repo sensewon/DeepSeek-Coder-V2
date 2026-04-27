@@ -42,8 +42,9 @@
   <a href="#3-evaluation-results">Evaluation Results</a> |
   <a href="#5-api-platform">API Platform</a> |
   <a href="#6-how-to-run-locally">How to Use</a> |
-  <a href="#7-license">License</a> |
-  <a href="#8-citation">Citation</a>
+  <a href="#7-using-deepseek-coder-v2-as-an-ai-coding-agent">AI Agents</a> |
+  <a href="#8-license">License</a> |
+  <a href="#9-citation">Citation</a>
 </p>
 
 
@@ -340,11 +341,184 @@ print(generated_text)
 
 
 
-## 7. License
+## 7. Using DeepSeek-Coder-V2 as an AI Coding Agent
+
+### What are AI Coding Agents?
+
+AI Coding Agents are intelligent assistants that can autonomously perform complex coding tasks such as:
+- **Code Generation**: Writing complete functions, classes, or entire applications from natural language descriptions
+- **Code Completion**: Auto-completing code snippets intelligently based on context
+- **Code Review & Refactoring**: Analyzing existing code and suggesting improvements
+- **Bug Fixing**: Identifying and fixing bugs in codebases (as demonstrated in our SWE-bench and Aider benchmarks)
+- **Multi-step Reasoning**: Breaking down complex programming tasks into manageable steps
+- **Interactive Development**: Engaging in back-and-forth conversations to iteratively build solutions
+
+### DeepSeek-Coder-V2 as an Agent
+
+DeepSeek-Coder-V2-Instruct is specifically designed to excel as an AI coding agent with several key advantages:
+
+#### Superior Performance in Agent Tasks
+As shown in our evaluation results:
+- **SWE-bench**: 12.7% success rate on real-world bug fixing tasks
+- **Aider**: 73.7% performance on code editing benchmarks
+- **Context Window**: 128K tokens enable working with large codebases
+- **Multi-language Support**: 338 programming languages for diverse development needs
+
+#### Key Capabilities for Agent Use Cases
+1. **Long Context Understanding**: 128K context window allows the model to understand entire files and project structures
+2. **Instruction Following**: Fine-tuned to follow complex, multi-step instructions accurately
+3. **Code Reasoning**: Strong performance on mathematical and logical reasoning tasks
+4. **Fill-in-the-Middle**: Native support for code insertion and editing tasks
+
+### Integration with Agent Frameworks
+
+DeepSeek-Coder-V2 can be integrated with popular AI agent frameworks through its **OpenAI-compatible API**:
+
+#### Using with OpenAI API-Compatible Tools
+Since DeepSeek provides an OpenAI-compatible API, you can easily integrate with frameworks that support OpenAI:
+
+```python
+import openai
+
+# Configure to use DeepSeek's API
+client = openai.Client(
+    api_key="your-deepseek-api-key",
+    base_url="https://api.deepseek.com"
+)
+
+# Use like any OpenAI model
+response = client.chat.completions.create(
+    model="deepseek-coder",  # Use the appropriate model name from DeepSeek's API
+    messages=[
+        {"role": "system", "content": "You are an expert coding assistant."},
+        {"role": "user", "content": "Write a Python function to implement binary search."}
+    ]
+)
+```
+
+#### Compatible Frameworks
+- **LangChain**: Use DeepSeek-Coder-V2 as an LLM backend for building agent workflows
+- **AutoGPT/GPT-Engineer**: Replace OpenAI models with DeepSeek for autonomous coding tasks
+- **Aider**: A popular AI pair programming tool (our benchmark results show 73.7% performance)
+- **Continue.dev**: VS Code/JetBrains extension for AI-powered code completion
+- **Cursor**: AI-first code editor that can use custom models
+- **Open Interpreter**: For running code and automating tasks
+
+#### Local Deployment for Private Agents
+For organizations requiring data privacy, deploy DeepSeek-Coder-V2 locally:
+
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
+# Load model locally
+tokenizer = AutoTokenizer.from_pretrained(
+    "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+    trust_remote_code=True
+)
+model = AutoModelForCausalLM.from_pretrained(
+    "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+    trust_remote_code=True,
+    torch_dtype=torch.bfloat16
+).cuda()
+
+# Build your custom agent
+def coding_agent(user_request):
+    messages = [
+        {"role": "system", "content": "You are a helpful coding assistant."},
+        {"role": "user", "content": user_request}
+    ]
+    
+    inputs = tokenizer.apply_chat_template(
+        messages, 
+        add_generation_prompt=True, 
+        return_tensors="pt"
+    ).to(model.device)
+    
+    outputs = model.generate(
+        inputs,
+        max_new_tokens=2048,
+        do_sample=False,
+        eos_token_id=tokenizer.eos_token_id
+    )
+    
+    return tokenizer.decode(
+        outputs[0][inputs.shape[1]:], 
+        skip_special_tokens=True
+    )
+
+# Use your agent
+response = coding_agent("Create a REST API for user management in Python")
+print(response)
+```
+
+#### Using with RAG (Retrieval-Augmented Generation)
+Combine DeepSeek-Coder-V2 with knowledge bases for enhanced agent capabilities:
+
+```python
+# Example: Integrating with a vector database
+# Note: Adjust imports based on your LangChain version
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAI
+
+# Setup DeepSeek as LLM backend (adjust model name as needed)
+llm = OpenAI(
+    api_key="your-deepseek-api-key",
+    base_url="https://api.deepseek.com",
+    model_name="deepseek-coder"  # Check DeepSeek's documentation for exact model names
+)
+
+# Load your codebase into vector store
+embeddings = HuggingFaceEmbeddings()
+vectorstore = Chroma.from_documents(documents, embeddings)
+
+# Create RAG chain
+from langchain.chains import RetrievalQA
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever()
+)
+
+# Query your codebase
+answer = qa_chain.run("How is authentication implemented in this project?")
+```
+
+### Best Practices for Agent Development
+
+1. **Use Instruct Models**: Always use `DeepSeek-Coder-V2-Instruct` for agent tasks, not the base model
+2. **System Prompts**: Provide clear system prompts to define the agent's role and behavior
+3. **Context Management**: Leverage the 128K context window for large files, but be mindful of performance
+4. **Temperature Settings**: Use lower temperature (0.0-0.3) for deterministic code generation
+5. **Streaming**: Enable streaming for better user experience in interactive agents
+6. **Error Handling**: Implement robust error handling as agents may generate incorrect code
+7. **Testing**: Always validate generated code with tests before execution
+
+### Use Cases
+
+- **Automated Code Review**: Analyze PRs and provide feedback
+- **Documentation Generation**: Generate comprehensive docs from code
+- **Bug Triage & Fixing**: Automatically fix common bugs in repositories
+- **Code Migration**: Port code between languages or frameworks
+- **Test Generation**: Create unit tests for existing functions
+- **Refactoring**: Improve code quality and maintainability
+- **API Development**: Build REST APIs from specifications
+- **Custom Development Tools**: Create tailored coding assistants for your team
+
+### Cost-Effective Agent Deployment
+
+DeepSeek offers **industry-leading pricing** for agent deployments:
+- Extremely competitive API pricing (see section 5)
+- Option for local deployment to eliminate API costs
+- Efficient inference with MLA architecture reduces compute costs
+
+For high-volume agent applications, consider using SGLang or vLLM for optimal throughput and latency.
+
+## 8. License
 
 This code repository is licensed under [the MIT License](LICENSE-CODE). The use of DeepSeek-Coder-V2 Base/Instruct models is subject to [the Model License](LICENSE-MODEL). DeepSeek-Coder-V2 series (including Base and Instruct) supports commercial use.
 
-## 8. Citation
+## 9. Citation
 ```latex
 @article{zhu2024deepseek,
   title={DeepSeek-Coder-V2: Breaking the Barrier of Closed-Source Models in Code Intelligence},
@@ -354,5 +528,5 @@ This code repository is licensed under [the MIT License](LICENSE-CODE). The use 
 }
 ```
 
-## 9. Contact
+## 10. Contact
 If you have any questions, please raise an issue or contact us at [service@deepseek.com](service@deepseek.com).
